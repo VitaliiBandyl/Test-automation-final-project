@@ -2,6 +2,7 @@ from .pages.product_page import ProductPage
 from .pages.basket_page import BasketPage
 from .pages.login_page import LoginPage
 import pytest
+import time
 
 
 @pytest.mark.login_guest
@@ -60,7 +61,17 @@ class TestGuestAddToBasketFromProductPage:
 
 @pytest.mark.add_to_basket_user
 class TestUserAddToBasketFromProductPage:
-    def test_user_cant_see_product_in_basket_opened_from_product_page(self, browser):
+    @pytest.fixture
+    def setup(self, browser):
+        link = "http://selenium1py.pythonanywhere.com/en-gb/accounts/login/"
+        page = LoginPage(browser, link)
+        page.open()
+        email = str(time.time()) + "@fakemail.org"
+        password = str(time.time())
+        page.register_new_user(email, password)
+        page.should_be_authorized_user()
+
+    def test_user_cant_see_product_in_basket_opened_from_product_page(self, browser, setup):
         link = "http://selenium1py.pythonanywhere.com/en-gb/catalogue/the-city-and-the-stars_95/"
         page = ProductPage(browser, link)
         page.open()
@@ -70,11 +81,19 @@ class TestUserAddToBasketFromProductPage:
         basket_page.should_not_be_product()
         basket_page.should_be_message_empty_basket()
 
-    def test_user_cant_see_success_message(self, browser):
+    def test_user_cant_see_success_message(self, browser, setup):
         link = "http://selenium1py.pythonanywhere.com/en-gb/catalogue/the-city-and-the-stars_95/"
         page = ProductPage(browser, link)
         page.open()
         page.should_not_be_success_message()
+
+    def test_user_can_add_product_to_basket(self, browser, setup):
+        page = ProductPage(browser,
+                           f"http://selenium1py.pythonanywhere.com/catalogue/coders-at-work_207/?promo=offer0")
+        page.open()
+        page.add_product_to_basket()
+        page.solve_quiz_and_get_code()
+        page.should_be_product_added()
 
 
 @pytest.mark.xfail(reason="Negative test. Not to be fixed")
